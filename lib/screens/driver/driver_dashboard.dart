@@ -14,6 +14,22 @@ class DriverDashboard extends StatefulWidget {
 class _DriverDashboardState extends State<DriverDashboard> {
   int _selectedIndex = 0;
 
+  final List<Widget> _screens = [
+    VehiclesSection(key: const ValueKey('rented'), initialTab: 'rented'),
+    VehiclesSection(key: const ValueKey('available'), initialTab: 'available'),
+  ];
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    await authProvider.logout();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -60,6 +76,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
           ],
         ),
         actions: [
+          // Кнопка "Выйти" - видимая кнопка
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () => _handleLogout(context),
+            tooltip: 'Выйти',
+          ),
+          
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -83,47 +106,11 @@ class _DriverDashboardState extends State<DriverDashboard> {
               ],
             ),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            color: const Color(0xFF2d2d2d),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: const BorderSide(color: Color(0xFF404040)),
-            ),
-            onSelected: (value) async {
-              if (value == 'logout') {
-                await authProvider.logout();
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, size: 20, color: Color(0xFF8a2be2)),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Выйти',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ],
       ),
       body: Container(
         color: const Color(0xFF121212),
-        child: VehiclesSection(
-          key: ValueKey(_selectedIndex),
-          initialTab: _selectedIndex == 0 ? 'rented' : 'available',
-        ),
+        child: _screens[_selectedIndex],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

@@ -5,6 +5,7 @@ import 'sections/declarations_section.dart';
 import 'sections/payments_section.dart';
 import 'sections/profile_section.dart';
 import '../auth/login_screen.dart';
+import '../client/activity_log.dart';
 
 class ClientDashboard extends StatefulWidget {
   const ClientDashboard({super.key});
@@ -21,6 +22,88 @@ class _ClientDashboardState extends State<ClientDashboard> {
     const PaymentsSection(),
     const ProfileSection(),
   ];
+
+  // Пример данных активности
+  final List<ActivityItem> _activityItems = [
+    ActivityItem(
+      id: '1',
+      description: 'Вход в систему выполнен',
+      date: DateTime.now().subtract(const Duration(minutes: 5)),
+    ),
+    ActivityItem(
+      id: '2',
+      description: 'Просмотрена декларация №12345',
+      date: DateTime.now().subtract(const Duration(minutes: 15)),
+    ),
+    ActivityItem(
+      id: '3',
+      description: 'Создан новый платеж на сумму 1500 руб.',
+      date: DateTime.now().subtract(const Duration(minutes: 30)),
+    ),
+    ActivityItem(
+      id: '4',
+      description: 'Обновлен профиль пользователя',
+      date: DateTime.now().subtract(const Duration(hours: 2)),
+    ),
+    ActivityItem(
+      id: '5',
+      description: 'Загружен документ "Договор_аренды.pdf"',
+      date: DateTime.now().subtract(const Duration(hours: 5)),
+    ),
+    ActivityItem(
+      id: '6',
+      description: 'Отправлен запрос в поддержку',
+      date: DateTime.now().subtract(const Duration(hours: 8)),
+    ),
+  ];
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Показать диалог подтверждения
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1e1e1e),
+        title: const Text(
+          'Выход',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Вы уверены, что хотите выйти?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Отмена',
+              style: TextStyle(color: Color(0xFF8a2be2)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8a2be2),
+            ),
+            child: const Text(
+              'Выйти',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await authProvider.logout();
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +124,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF0d6efd), // Синий для клиента
-                    Color(0xFF8a2be2), // Фиолетовый
+                    Color(0xFF0d6efd),
+                    Color(0xFF8a2be2),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -68,6 +151,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
           ],
         ),
         actions: [
+          // Прямая кнопка выхода (без меню)
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () => _handleLogout(context),
+            tooltip: 'Выйти',
+          ),
+          
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -91,44 +181,24 @@ class _ClientDashboardState extends State<ClientDashboard> {
               ],
             ),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            color: const Color(0xFF2d2d2d),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: const BorderSide(color: Color(0xFF404040)),
-            ),
-            onSelected: (value) async {
-              if (value == 'logout') {
-                await authProvider.logout();
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, size: 20, color: Color(0xFF8a2be2)),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Выйти',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ],
       ),
-      body: Container(
-        color: const Color(0xFF121212),
-        child: _screens[_selectedIndex],
+      body: Column(
+        children: [
+          // Основной контент
+          Expanded(
+            child: Container(
+              color: const Color(0xFF121212),
+              child: _screens[_selectedIndex],
+            ),
+          ),
+
+          // Лог активности
+          ActivityLog(
+            activities: _activityItems,
+            isExpanded: true,
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
